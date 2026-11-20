@@ -1,187 +1,150 @@
 /* The public lab site.
-   Euronia's own palette and faces, so the two halves read as one thing: paper and ink,
-   oxblood for what matters, Spectral throughout, JetBrains Mono for labels and dates.
-   The shape is an academic lab site rather than a brochure: a statement and the news at
-   the top, publications as the centre of gravity, everything else in plain rows. */
+
+   Set after the sites Peter chose as references: Pedro Gonçalves, Jon Barron, Alex
+   Williams, the UW Interactive Data Lab. What they share is not a look but a refusal. No
+   hero, no banner, no tagline bar, no cards, no chips, no alternating section backgrounds,
+   no rules between things. A name, a photograph, a paragraph in the first person, a line of
+   links, and then the work, set as a reference list and nothing more.
+
+   Euronia's own ink and paper and its Spectral, so the two halves of the lab read as one
+   thing, but none of Euronia's chrome: the site is read, not used. */
 
 :root {
-  --bg: #F7F7F7; --surface: #FFFFFF; --sunk: #E7E7E7; --border: #DBDBDB;
-  --fg: #161616; --muted: #5E5E5E; --faint: #8C8C8C;
-  --accent: #8A5D0C; --accent-soft: rgba(138, 93, 12, .10);
+  --bg: #F7F7F7;
+  --fg: #161616;
+  --muted: #55554F;
+  --faint: #8C8C8C;
+  --rule: #DBDBDB;
+  --accent: #8A5D0C;
   --serif: Spectral, "Iowan Old Style", Palatino, Georgia, serif;
   --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
-  --measure: 68ch;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #111111; --surface: #1A1A1A; --sunk: #0B0B0B; --border: #2B2B2B;
-    --fg: #E8E8E8; --muted: #9A9A9A; --faint: #6A6A6A;
-    --accent: #E0A33E; --accent-soft: rgba(224, 163, 62, .13);
+    --bg: #111111;
+    --fg: #E8E8E8;
+    --muted: #A6A6A0;
+    --faint: #6A6A6A;
+    --rule: #2B2B2B;
+    --accent: #E0A33E;
     color-scheme: dark;
   }
 }
 
 * { box-sizing: border-box; }
 body {
-  margin: 0; background: var(--bg); color: var(--fg);
-  font: 400 16px/1.65 var(--serif); -webkit-font-smoothing: antialiased;
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 400 17px/1.62 var(--serif);
+  -webkit-font-smoothing: antialiased;
 }
-h1, h2, h3 { font-weight: 600; letter-spacing: -.01em; margin: 0; text-wrap: balance; }
+h1, h2, h3 { font-weight: 600; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
 p { margin: 0; }
-ul, ol, dl { margin: 0; padding: 0; list-style: none; }
-a { color: inherit; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+ul { margin: 0; padding: 0; list-style: none; }
+img { max-width: 100%; display: block; }
 [hidden] { display: none !important; }
 
-.skip {
-  position: absolute; left: -9999px; top: 0; background: var(--surface);
-  padding: 10px 14px; border: 1px solid var(--border); z-index: 10;
-}
-.skip:focus { left: 8px; top: 8px; }
+a { color: var(--fg); text-decoration-color: var(--rule); text-underline-offset: 2.5px; }
+a:hover { color: var(--accent); text-decoration-color: currentColor; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
-.wrap { width: min(1060px, 100% - 40px); margin-inline: auto; }
-@media (max-width: 560px) { .wrap { width: calc(100% - 32px); } }
+.skip { position: absolute; left: -9999px; }
+.skip:focus { left: 16px; top: 16px; background: var(--bg); padding: 10px 14px; border: 1px solid var(--rule); }
 
-/* ---------- The bar ---------- */
-.top { border-bottom: 1px solid var(--border); background: var(--surface); }
-.top-in {
-  display: flex; align-items: center; justify-content: space-between; gap: 20px;
-  flex-wrap: wrap; padding-block: 14px;
+/* One column, the width of a page of prose. Everything hangs off the same left edge, which
+   is what makes a page like this readable without a single rule or box. */
+.wrap {
+  width: min(760px, 100% - 44px);
+  margin-inline: auto;
+  padding-block: 64px 40px;
 }
-.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-.brand b { display: block; font: 600 18px/1.1 var(--serif); }
-.brand small {
-  display: block; font: 400 10px/1.4 var(--mono); letter-spacing: .18em;
-  text-transform: uppercase; color: var(--faint); margin-top: 3px;
-}
-.mark {
-  width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--accent);
-  position: relative; flex: none;
-}
-.mark::after {
-  content: ""; position: absolute; inset: 5.5px; border-radius: 50%; background: var(--accent);
-}
-.top nav { display: flex; gap: 18px; flex-wrap: wrap; }
-.top nav a {
-  font: 400 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase;
-  color: var(--muted); text-decoration: none; padding-block: 4px;
-}
-.top nav a:hover { color: var(--accent); }
+@media (max-width: 560px) { .wrap { width: calc(100% - 32px); padding-block: 40px 28px; } }
 
-/* ---------- The top of the page ---------- */
-.lede-in {
-  display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
-  gap: 48px; align-items: start; padding-block: 56px 44px;
+/* ---------- The top ---------- */
+.head { display: flex; gap: 32px; align-items: flex-start; }
+.head-text { min-width: 0; flex: 1; }
+.photo {
+  width: 148px; height: 148px; object-fit: cover; border-radius: 2px; flex: none;
+  filter: grayscale(1); order: 2;
 }
-@media (max-width: 860px) { .lede-in { grid-template-columns: 1fr; gap: 32px; padding-block: 36px 28px; } }
-
-.kicker {
-  font: 400 11px/1.4 var(--mono); letter-spacing: .2em; text-transform: uppercase;
-  color: var(--accent); margin-bottom: 12px;
-}
-h1 { font-size: clamp(30px, 4.4vw, 44px); line-height: 1.08; }
-.lede { color: var(--muted); font-size: 17px; margin-top: 12px; max-width: var(--measure); }
-
-.interests { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 18px; }
-.interests li {
-  font: 400 11px/1 var(--mono); letter-spacing: .06em; color: var(--muted);
-  border: 1px solid var(--border); border-radius: 2px; padding: 5px 8px;
+@media (max-width: 620px) {
+  .head { flex-direction: column-reverse; align-items: flex-start; gap: 20px; }
+  .photo { width: 112px; height: 112px; }
 }
 
-.news {
-  border-left: 2px solid var(--accent); padding-left: 16px;
-}
-.eyebrow {
-  font: 400 10px/1.4 var(--mono); letter-spacing: .18em; text-transform: uppercase;
-  color: var(--accent); margin-bottom: 10px;
-}
-.news ol { display: flex; flex-direction: column; gap: 12px; }
-.news time {
-  display: block; font: 400 10px/1.4 var(--mono); letter-spacing: .08em;
-  text-transform: uppercase; color: var(--faint);
-}
-.news p { font-size: 14.5px; line-height: 1.5; margin-top: 2px; }
+h1 { font-size: clamp(28px, 4.2vw, 36px); line-height: 1.1; }
+.role { color: var(--muted); font-size: 16px; margin-top: 6px; }
+.bio { margin-top: 18px; }
+.bio p { margin-bottom: .85em; }
+.bio p:last-child { margin-bottom: 0; }
 
-/* ---------- The sections ---------- */
-.band { padding-block: 40px; border-top: 1px solid var(--border); }
-.band > h2 { font-size: 21px; margin-bottom: 20px; }
+/* Email / CV / Scholar / GitHub, the way every one of these sites does it. */
+.links { margin-top: 18px; font-size: 15px; color: var(--faint); }
+.links a { color: var(--muted); }
+.links .sep { padding-inline: 7px; }
 
-.lines { display: flex; flex-direction: column; gap: 28px; }
-.line h3 { font-size: 18px; line-height: 1.3; }
-.line .sub { color: var(--muted); font-size: 14px; margin-top: 3px; }
-.line .question {
-  border-left: 2px solid var(--border); padding-left: 14px; margin-top: 12px;
-  font-size: 16px; max-width: var(--measure);
-}
-.line .aims { margin-top: 12px; display: flex; flex-direction: column; gap: 5px; }
-.line .aims li { font-size: 14.5px; color: var(--muted); padding-left: 16px; position: relative; max-width: var(--measure); }
-.line .aims li::before { content: "—"; position: absolute; left: 0; color: var(--faint); }
-.stage {
-  display: inline-block; font: 400 10px/1 var(--mono); letter-spacing: .1em;
-  text-transform: uppercase; color: var(--accent); border: 1px solid var(--accent);
-  border-radius: 2px; padding: 3px 6px; margin-left: 8px; vertical-align: 3px;
+/* ---------- Sections ---------- */
+section { margin-top: 46px; }
+section > h2 {
+  font-size: 20px;
+  margin-bottom: 18px;
 }
 
-/* A publications list is what an academic site is read for, so it is set as a list of
-   references: hanging indent, the title doing the work, the venue quiet behind it. */
-.pubs { display: flex; flex-direction: column; gap: 18px; counter-reset: pub; }
-.pubs li { padding-left: 38px; position: relative; max-width: 78ch; }
-.pubs li::before {
-  counter-increment: pub; content: "[" counter(pub) "]";
-  position: absolute; left: 0; top: 2px;
-  font: 400 11px/1.5 var(--mono); color: var(--faint);
+/* ---------- Research ---------- */
+.lines { display: flex; flex-direction: column; gap: 30px; }
+.line h3 { font-size: 17.5px; line-height: 1.35; font-weight: 600; }
+.line .stage {
+  font: 400 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--faint); margin-left: 10px; white-space: nowrap;
 }
-.pubs .title { font-size: 16.5px; line-height: 1.35; }
-.pubs .title a { text-decoration-color: var(--border); text-underline-offset: 3px; }
-.pubs .title a:hover { color: var(--accent); }
-.pubs .where { font-size: 14px; color: var(--muted); margin-top: 3px; }
-.pubs .note { font-size: 14px; color: var(--muted); margin-top: 6px; }
-.kind {
-  font: 400 10px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase;
-  color: var(--faint); border: 1px solid var(--border); border-radius: 2px;
-  padding: 2px 5px; margin-left: 8px; white-space: nowrap;
-}
+.line .sub { color: var(--muted); font-size: 15.5px; margin-top: 4px; }
+.line .question { margin-top: 10px; }
+.line .aims { margin-top: 10px; color: var(--muted); font-size: 15.5px; }
+.line .aims li { padding-left: 18px; position: relative; margin-bottom: 3px; }
+.line .aims li::before { content: "·"; position: absolute; left: 4px; color: var(--faint); }
 
-.rows { display: flex; flex-direction: column; }
-.rows li {
-  display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap;
-  padding-block: 11px; border-bottom: 1px solid var(--border);
+/* ---------- Publications ----------
+   The form Jon Barron's site uses and almost every academic site has copied: the title
+   doing the work, the authors under it with your own name marked, the venue and the year
+   quiet, a line of places to go, and then one plain sentence saying what it found. That
+   last line is the whole difference between a list people read and one they scroll past. */
+.pubs { display: flex; flex-direction: column; gap: 26px; }
+.pub .title { font-size: 17px; line-height: 1.35; font-weight: 600; }
+.pub .kind {
+  font: 400 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--faint); margin-left: 9px; white-space: nowrap;
 }
-.rows li:first-child { border-top: 1px solid var(--border); }
-.rows .when {
-  font: 400 11px/1.5 var(--mono); color: var(--faint); width: 7.5rem; flex: none;
+.pub .authors { font-size: 15.5px; color: var(--muted); margin-top: 3px; }
+.pub .authors .me { color: var(--fg); font-weight: 500; }
+.pub .venue { font-size: 15.5px; color: var(--muted); font-style: italic; }
+.pub .where { margin-top: 2px; }
+.pub .links { margin-top: 5px; font-size: 14.5px; }
+.pub .note { margin-top: 7px; font-size: 16px; }
+
+/* ---------- Plain lists: talks, software, news ---------- */
+.plain { display: flex; flex-direction: column; gap: 14px; }
+.plain li { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: 4px 18px; }
+@media (max-width: 560px) { .plain li { grid-template-columns: 1fr; gap: 2px; } }
+.plain .when {
+  font: 400 12.5px/1.6 var(--mono); color: var(--faint); white-space: nowrap;
 }
-.rows .what { flex: 1; min-width: 12rem; font-size: 15.5px; }
-.rows .aside { color: var(--muted); font-size: 14px; }
+.plain .what { font-size: 16px; }
+.plain .aside { grid-column: 2; color: var(--muted); font-size: 15px; }
+@media (max-width: 560px) { .plain .aside { grid-column: 1; } }
 
-.prose { max-width: var(--measure); }
-.prose p { margin-bottom: 1em; }
-.prose p:last-child { margin-bottom: 0; }
-.prose h3 { font-size: 17px; margin: 1.4em 0 .4em; }
-.prose ul { list-style: disc; padding-left: 1.2em; margin-bottom: 1em; }
-.prose li { margin-bottom: .3em; }
+/* ---------- Contact ---------- */
+.contact { color: var(--muted); }
+.contact a { color: var(--fg); }
+.contact .line { display: block; margin-bottom: 4px; }
 
-.link {
-  font: 400 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase;
-  border-bottom: 1px solid currentColor; padding-bottom: 3px; text-decoration: none;
+.empty { margin-top: 56px; color: var(--muted); }
+
+.foot { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--rule); }
+.caption {
+  font: 400 11.5px/1.6 var(--mono); letter-spacing: .06em; color: var(--faint);
 }
-.link:hover { color: var(--accent); }
-
-.contact { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 10px 16px; max-width: var(--measure); }
-.contact dt {
-  font: 400 11px/1.6 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--faint);
-}
-.contact dd { margin: 0; font-size: 15.5px; }
-
-.empty { padding-block: 72px; color: var(--muted); text-align: center; }
-
-.foot {
-  border-top: 1px solid var(--border); margin-top: 32px;
-  padding-block: 24px 40px; display: flex; justify-content: space-between;
-  gap: 16px; flex-wrap: wrap; align-items: baseline;
-}
-.caption { font: 400 10px/1.5 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

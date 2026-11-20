@@ -6,19 +6,13 @@
 //
 // Everything that comes out of the feed is set as text, never as markup, because the feed
 // is a file in a repository and a site that executes what it reads is a site waiting for an
-// accident. The one exception is the research statement, which is rendered from a small,
-// closed subset of Markdown written here, element by element.
+// accident. The one exception is prose, which is rendered from a small, closed subset of
+// Markdown written here, element by element.
 
 (function () {
   "use strict";
 
   var el = function (sel) { return document.querySelector(sel); };
-  var all = function (sel) { return Array.prototype.slice.call(document.querySelectorAll(sel)); };
-
-  function text(node, value) {
-    if (!node) return;
-    node.textContent = value == null ? "" : String(value);
-  }
 
   function show(section, on) {
     var node = el('[data-section="' + section + '"]');
@@ -29,40 +23,56 @@
   function saysWhen(iso) {
     if (!iso) return "";
     var parts = String(iso).slice(0, 10).split("-");
-    var year = parts[0];
-    var month = Number(parts[1]);
     var MONTHS = ["January", "February", "March", "April", "May", "June",
       "July", "August", "September", "October", "November", "December"];
-    if (!month || !MONTHS[month - 1]) return year;
-    return MONTHS[month - 1] + " " + year;
+    var month = Number(parts[1]);
+    if (!month || !MONTHS[month - 1]) return parts[0];
+    return MONTHS[month - 1] + " " + parts[0];
   }
 
-  function makeLink(href, label) {
-    if (!href) return document.createTextNode(label);
+  var SAFE = /^(https?:|mailto:)/i;
+
+  function link(href, label) {
+    if (!href || !SAFE.test(href)) return document.createTextNode(label);
     var a = document.createElement("a");
-    // Only the two schemes a lab site needs. Anything else is shown as text.
-    if (!/^(https?:|mailto:)/i.test(href)) return document.createTextNode(label);
     a.href = href;
     a.textContent = label;
     if (/^https?:/i.test(href)) { a.target = "_blank"; a.rel = "noopener noreferrer"; }
     return a;
   }
 
+  /** "Email / CV / Scholar / GitHub", the line every one of the reference sites has. */
+  function slashes(into, items) {
+    var put = 0;
+    items.forEach(function (item) {
+      if (!item || !item.href || !item.label) return;
+      if (put > 0) {
+        var sep = document.createElement("span");
+        sep.className = "sep";
+        sep.textContent = "/";
+        into.appendChild(sep);
+      }
+      into.appendChild(link(item.href, item.label));
+      put += 1;
+    });
+    return put;
+  }
+
   /**
-   * The research statement, from a closed subset of Markdown.
+   * Prose, from a closed subset of Markdown.
    *
    * Paragraphs, three levels of heading, bullet lists, and nothing else. Built as elements
    * with textContent, so there is no path from the feed to markup however it is written.
    */
   function prose(into, source) {
     into.textContent = "";
-    var blocks = String(source || "").replace(/\r\n/g, "\n").split(/\n{2,}/);
-    blocks.forEach(function (block) {
+    String(source || "").replace(/\r\n/g, "\n").split(/\n{2,}/).forEach(function (block) {
       var lines = block.split("\n").filter(function (l) { return l.trim() !== ""; });
       if (lines.length === 0) return;
 
       if (lines.every(function (l) { return /^\s*[-*]\s+/.test(l); })) {
         var ul = document.createElement("ul");
+        ul.className = "aims";
         lines.forEach(function (line) {
           var li = document.createElement("li");
           li.textContent = line.replace(/^\s*[-*]\s+/, "");
@@ -86,77 +96,95 @@
     });
   }
 
+  /**
+   * The authors of a paper, with your own name marked.
+   *
+   * Every reference site does this, and it is the one piece of formatting a publications
+   * list genuinely needs: it is how a reader finds you in a list of eleven names.
+   */
+  function authors(into, line, me) {
+    var surname = String(me || "").trim().split(/\s+/).pop();
+    if (!surname || surname.length < 3) { into.textContent = line; return; }
+
+    var parts = String(line).split(new RegExp("(" + surname.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")"));
+    parts.forEach(function (part, i) {
+      if (i % 2 === 1) {
+        var strong = document.createElement("span");
+        strong.className = "me";
+        strong.textContent = part;
+        into.appendChild(strong);
+      } else if (part) {
+        into.appendChild(document.createTextNode(part));
+      }
+    });
+  }
+
   function draw(feed) {
     var lab = feed.lab || {};
     var person = feed.person || {};
+    var name = person.name || lab.name || "Euronia";
 
-    text(el("[data-lab-name]"), lab.name || "Euronia");
-    text(el("[data-lab-tagline]"), lab.tagline || "");
-    text(el("[data-foot-name]"), person.name || lab.name || "Euronia");
-    if (lab.name) document.title = person.name ? person.name + " · " + lab.name : lab.name;
+    document.title = lab.name && person.name ? person.name + " · " + lab.name : name;
+    el("[data-person-name]").textContent = name;
 
-    text(el("[data-person-name]"), person.name || lab.name || "Euronia");
-    text(el("[data-person-role]"), [person.role, person.affiliation].filter(Boolean).join(" · "));
-    text(el("[data-person-blurb]"), person.blurb || "");
-
-    var interests = el("[data-interests]");
-    (feed.interests || []).forEach(function (interest) {
-      var li = document.createElement("li");
-      li.textContent = interest;
-      interests.appendChild(li);
-    });
-
-    var news = feed.news || [];
-    if (news.length) {
-      el("[data-news-box]").hidden = false;
-      var list = el("[data-news]");
-      news.slice(0, 6).forEach(function (item) {
-        var li = document.createElement("li");
-        var when = document.createElement("time");
-        when.dateTime = String(item.on || "");
-        when.textContent = saysWhen(item.on);
-        var body = document.createElement("p");
-        if (item.href) body.appendChild(makeLink(item.href, item.body || ""));
-        else body.textContent = item.body || "";
-        li.appendChild(when);
-        li.appendChild(body);
-        list.appendChild(li);
-      });
+    var role = [person.role, person.affiliation].filter(Boolean).join(", ");
+    if (role) {
+      el("[data-person-role]").textContent = role;
+      el("[data-person-role]").hidden = false;
     }
+
+    if (person.photo && /^https?:/i.test(person.photo)) {
+      var photo = el("[data-photo]");
+      photo.src = person.photo;
+      photo.alt = name;
+      photo.hidden = false;
+    }
+
+    // The bio is the blurb and the research statement, read as one piece of prose, which is
+    // how these sites read: there is no "about" page, there is the top of the page.
+    var bio = [person.blurb, feed.about].filter(function (x) { return String(x || "").trim(); }).join("\n\n");
+    if (bio) prose(el("[data-bio]"), bio);
+
+    var line = el("[data-links]");
+    var put = slashes(line, [
+      person.email ? { label: "Email", href: "mailto:" + person.email } : null,
+      feed.cv && feed.cv.href ? { label: "CV", href: feed.cv.href } : null,
+    ].concat(person.links || []));
+    line.hidden = put === 0;
 
     var research = feed.research || [];
     show("research", research.length > 0);
     var lines = el("[data-research]");
-    research.forEach(function (line) {
+    research.forEach(function (item) {
       var box = document.createElement("article");
       box.className = "line";
 
       var h = document.createElement("h3");
-      h.textContent = line.title || "";
-      if (line.stage) {
+      h.textContent = item.title || "";
+      if (item.stage) {
         var stage = document.createElement("span");
         stage.className = "stage";
-        stage.textContent = line.stage;
+        stage.textContent = item.stage;
         h.appendChild(stage);
       }
       box.appendChild(h);
 
-      if (line.subtitle) {
+      if (item.subtitle) {
         var sub = document.createElement("p");
         sub.className = "sub";
-        sub.textContent = line.subtitle;
+        sub.textContent = item.subtitle;
         box.appendChild(sub);
       }
-      if (line.question) {
+      if (item.question) {
         var q = document.createElement("p");
         q.className = "question";
-        q.textContent = line.question;
+        q.textContent = item.question;
         box.appendChild(q);
       }
-      if ((line.aims || []).length) {
+      if ((item.aims || []).length) {
         var aims = document.createElement("ul");
         aims.className = "aims";
-        line.aims.forEach(function (aim) {
+        item.aims.forEach(function (aim) {
           var li = document.createElement("li");
           li.textContent = aim;
           aims.appendChild(li);
@@ -168,131 +196,128 @@
 
     var pubs = feed.publications || [];
     show("publications", pubs.length > 0);
-    var pubList = el("[data-publications]");
+    var pubBox = el("[data-publications]");
     pubs.forEach(function (pub) {
-      var li = document.createElement("li");
+      var box = document.createElement("article");
+      box.className = "pub";
 
       var title = document.createElement("p");
       title.className = "title";
-      title.appendChild(makeLink(pub.href || pub.doi, pub.title || "Untitled"));
+      title.appendChild(link(pub.href || pub.doi, pub.title || "Untitled"));
       if (pub.kind && pub.kind !== "paper") {
         var kind = document.createElement("span");
         kind.className = "kind";
         kind.textContent = pub.kind;
         title.appendChild(kind);
       }
-      li.appendChild(title);
+      box.appendChild(title);
 
-      var where = document.createElement("p");
-      where.className = "where";
-      where.textContent = [pub.authors, pub.venue, pub.year].filter(Boolean).join(" · ");
-      if (where.textContent) li.appendChild(where);
+      if (pub.authors) {
+        var who = document.createElement("p");
+        who.className = "authors";
+        authors(who, pub.authors, person.name);
+        box.appendChild(who);
+      }
+
+      if (pub.venue || pub.year) {
+        var where = document.createElement("p");
+        where.className = "where";
+        var venue = document.createElement("span");
+        venue.className = "venue";
+        venue.textContent = [pub.venue, pub.year].filter(Boolean).join(", ");
+        where.appendChild(venue);
+        box.appendChild(where);
+      }
+
+      if ((pub.links || []).length) {
+        var places = document.createElement("p");
+        places.className = "links";
+        if (slashes(places, pub.links)) box.appendChild(places);
+      }
 
       if (pub.note) {
         var note = document.createElement("p");
         note.className = "note";
         note.textContent = pub.note;
-        li.appendChild(note);
+        box.appendChild(note);
       }
-      pubList.appendChild(li);
+
+      pubBox.appendChild(box);
     });
 
-    var talks = feed.talks || [];
-    show("talks", talks.length > 0);
-    var talkList = el("[data-talks]");
-    talks.forEach(function (talk) {
-      var li = document.createElement("li");
-      var when = document.createElement("span");
-      when.className = "when";
-      when.textContent = saysWhen(talk.on);
-      var what = document.createElement("span");
-      what.className = "what";
-      what.appendChild(makeLink(talk.href, talk.title || "A talk"));
-      var where = document.createElement("span");
-      where.className = "aside";
-      where.textContent = talk.where || "";
-      li.appendChild(when);
-      li.appendChild(what);
-      li.appendChild(where);
-      talkList.appendChild(li);
-    });
+    /** Talks, software and news are the same shape: a label, a thing, and an aside. */
+    function plain(section, list, make) {
+      show(section, list.length > 0);
+      var into = el("[data-" + section + "]");
+      list.forEach(function (item) {
+        var parts = make(item);
+        var li = document.createElement("li");
 
-    var software = feed.software || [];
-    show("software", software.length > 0);
-    var softList = el("[data-software]");
-    software.forEach(function (item) {
-      var li = document.createElement("li");
-      var name = document.createElement("span");
-      name.className = "when";
-      name.appendChild(makeLink(item.href, item.name || ""));
-      var what = document.createElement("span");
-      what.className = "what";
-      what.textContent = item.what || "";
-      li.appendChild(name);
-      li.appendChild(what);
-      if (item.language) {
-        var lang = document.createElement("span");
-        lang.className = "aside";
-        lang.textContent = item.language;
-        li.appendChild(lang);
-      }
-      softList.appendChild(li);
-    });
+        var when = document.createElement("span");
+        when.className = "when";
+        when.textContent = parts.when || "";
+        li.appendChild(when);
 
-    var about = String(feed.about || "").trim();
-    show("about", about.length > 0 || !!feed.cv);
-    if (about) prose(el("[data-about]"), about);
-    if (feed.cv && feed.cv.href) {
-      var box = el("[data-cv-box]");
-      var link = el("[data-cv]");
-      if (/^https?:/i.test(feed.cv.href)) {
-        link.href = feed.cv.href;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        box.hidden = false;
-      }
+        var what = document.createElement("span");
+        what.className = "what";
+        if (parts.href) what.appendChild(link(parts.href, parts.what));
+        else what.textContent = parts.what;
+        li.appendChild(what);
+
+        if (parts.aside) {
+          var aside = document.createElement("span");
+          aside.className = "aside";
+          aside.textContent = parts.aside;
+          li.appendChild(aside);
+        }
+        into.appendChild(li);
+      });
     }
 
-    var contact = feed.contact || {};
-    var rows = [["Email", contact.email], ["Where", contact.where], ["", contact.note]]
-      .filter(function (row) { return row[1]; });
-    show("contact", rows.length > 0);
-    var dl = el("[data-contact]");
-    rows.forEach(function (row) {
-      var dt = document.createElement("dt");
-      dt.textContent = row[0];
-      var dd = document.createElement("dd");
-      if (row[0] === "Email") dd.appendChild(makeLink("mailto:" + row[1], row[1]));
-      else dd.textContent = row[1];
-      dl.appendChild(dt);
-      dl.appendChild(dd);
+    plain("talks", feed.talks || [], function (talk) {
+      return { when: saysWhen(talk.on), what: talk.title || "A talk", href: talk.href, aside: talk.where };
+    });
+    plain("software", feed.software || [], function (item) {
+      return { when: item.language || "", what: item.name || "", href: item.href, aside: item.what };
+    });
+    plain("news", feed.news || [], function (item) {
+      return { when: saysWhen(item.on), what: item.body || "", href: item.href };
     });
 
-    var anything = research.length || pubs.length || talks.length || software.length
-      || about || rows.length || news.length;
+    var contact = feed.contact || {};
+    var bits = [];
+    if (contact.email) bits.push({ label: contact.email, href: "mailto:" + contact.email });
+    show("contact", !!(contact.email || contact.where || contact.note));
+    var box = el("[data-contact]");
+    if (contact.email) {
+      var first = document.createElement("span");
+      first.className = "line";
+      first.appendChild(link("mailto:" + contact.email, contact.email));
+      box.appendChild(first);
+    }
+    [contact.where, contact.note].forEach(function (text) {
+      if (!text) return;
+      var span = document.createElement("span");
+      span.className = "line";
+      span.textContent = text;
+      box.appendChild(span);
+    });
+
+    var anything = research.length || pubs.length || (feed.talks || []).length
+      || (feed.software || []).length || (feed.news || []).length || bio || bits.length;
     el("[data-empty]").hidden = !!anything;
 
-    // Hide a section's link in the bar when the section itself is not there.
-    all(".top nav a").forEach(function (a) {
-      var section = el('[data-section="' + a.getAttribute("href").slice(1) + '"]');
-      if (section && section.hidden) a.hidden = true;
-    });
-
     if (feed.generatedAt) {
-      text(el("[data-generated]"), "Last published " + saysWhen(feed.generatedAt));
+      el("[data-generated]").textContent = "Last published " + saysWhen(feed.generatedAt);
     }
   }
 
   fetch("feed.json", { cache: "no-cache" })
     .then(function (answer) { return answer.ok ? answer.json() : null; })
     .then(function (feed) {
-      if (!feed) return;
-      if (feed.version !== 1) {
-        // A feed from a newer Euronia than this site understands. Better to show the page
-        // as it was than to draw half of something.
-        return;
-      }
-      draw(feed);
+      // A feed from a newer Euronia than this site understands: better to show the page as
+      // it stands than to draw half of something.
+      if (feed && feed.version === 1) draw(feed);
     })
     .catch(function () { /* No feed yet, or offline. The page stands as it is. */ });
 })();
